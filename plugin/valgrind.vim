@@ -64,6 +64,7 @@ set cpo&vim
 
 if !exists(":Valgrind")
     command -nargs=1 Valgrind call <SID>Valgrind(<f-args>)
+    command  Memtest call <SID>Valgrind()
 endif
 
 
@@ -89,21 +90,26 @@ function s:Valgrind( ... )
 
     " construct the commandline and execute it
     let l:run_valgrind='!'
+
     if exists("g:valgrind_command")
-	let l:run_valgrind=l:run_valgrind.g:valgrind_command
+        let l:run_valgrind=l:run_valgrind.g:valgrind_command
     else
-	let l:run_valgrind=l:run_valgrind.'valgrind'
+        let l:run_valgrind=l:run_valgrind.'valgrind'
     endif
+
     if exists("g:valgrind_arguments")
-	let l:run_valgrind=l:run_valgrind.' '.g:valgrind_arguments
+        let l:run_valgrind=l:run_valgrind.' '.g:valgrind_arguments
     else
-	let l:run_valgrind=l:run_valgrind.' --num-callers=5000'
+        let l:run_valgrind=l:run_valgrind.' --num-callers=5000'
     endif
+
+    "add any custom arguments
     let l:i = 1
     while l:i <= a:0
-	execute 'let l:run_valgrind=l:run_valgrind." ".a:'.l:i
-	let l:i = l:i + 1
+        execute 'let l:run_valgrind=l:run_valgrind." ".a:'.l:i
+        let l:i = l:i + 1
     endwhile
+
     let l:run_valgrind=l:run_valgrind.' 2>&1| tee '.l:tmpfile
     execute l:run_valgrind
 
@@ -112,6 +118,10 @@ function s:Valgrind( ... )
     silent execute 'g!/^==\d*==/d'
     silent execute '%s/^==\d*== //e'
     silent execute '1'
+
+    " Keep the valgrind buffer for future use
+    let s:val_buffer = bufname(l:tmpfile)
+    let s:val_winnum = bufwinnr(s:val_buffer)
 
     " make the buffer non-editable
     setl buftype=nowrite
@@ -130,10 +140,11 @@ function s:Valgrind( ... )
 
     " fold settings
     if has('folding')
-	setl foldenable
-	setl foldmethod=expr
-	setl foldexpr=getline(v:lnum)=~'^\\s*$'&&getline(v:lnum+1)=~'\\S'?'<1':1
+        setl foldenable
+        setl foldmethod=expr
+        setl foldexpr=getline(v:lnum)=~'^\\s*$'&&getline(v:lnum+1)=~'\\S'?'<1':1
     endif
+
 
     " show help
     call <SID>Show_Help(1)
@@ -154,6 +165,10 @@ function s:Valgrind( ... )
     nnoremap <buffer> <silent> x :call <SID>Zoom_Window()<CR>
     nnoremap <buffer> <silent> ? :call <SID>Show_Help(0)<CR>
     nnoremap <buffer> <silent> q :close<CR>
+
+    " Navigate the call statck
+    nnoremap <silent> <C-k> :call <SID>Up()<CR>
+    nnoremap <silent> <C-j> :call <SID>Down()<CR>
 endfunction
 
 " }}}
@@ -161,87 +176,112 @@ endfunction
 
 function s:Find_File( filename )
     if filereadable( a:filename )
-	return a:filename
+    return a:filename
     else
-	" ### implement me
-	"echo globpath( &path, a:filename )
+    " ### implement me
+    "echo globpath( &path, a:filename )
     endif
 endfunction
 
 " }}}
 " Jump_To_Error( new_window, stay_valgrind_window ) {{{
 
-function s:Jump_To_Error( new_window, stay_valgrind_window )
+function s:Jump_To_Error(new_window, stay_valgrind_window )
     " do not process empty lines
     let l:curline = getline('.')
     if l:curline == ''
         return
     endif
 
+    " export the line number so we can navigate the call stack
+    let s:lineNo = line(".")
+
+    call s:OpenStackTraceLine(a:new_window, a:stay_valgrind_window, l:curline)
+
+
+endfunction
+
+function s:OpenStackTraceLine(new_window, no_new_window, stackLine ) 
+    " What does it mean to say "no new window?" 
+    let l:stay_this_window = a:no_new_window
+    let l:stay_valgrind_window = 0
+    if l:stay_this_window && winnr() == s:val_winnum 
+        let l:stay_valgrind_window = 1
+        let l:stay_this_window = 0
+    endif
+
     " if inside a fold, open it
     if foldclosed('.') != -1
-	execute "foldopen"
-        return
+        execute "foldopen"
+        return -1
     endif
 
     " if the line doesn't start with "   at" or "   by" , return
-    if match( l:curline, "   at" ) != 0 &&  match( l:curline, "   by" ) != 0
-        return
+    if match( a:stackLine, "   at" ) != 0 &&  match( a:stackLine, "   by" ) != 0
+        return -1
     endif
 
     " determine file and line to go to
-    let l:curline = substitute( substitute( l:curline, '.*(', '', '' ), ').*', '', '' )
+    let l:curline = substitute( substitute( a:stackLine, '.*(', '', '' ), ').*', '', '' )
     let l:filename = s:Find_File( substitute( l:curline, ':\d*$', '', '' ) )
     if l:filename == "" 
-	return
+        return 1
     endif
     let l:linenumber = substitute( l:curline, '.*:', '', '' )
 
     " Goto the window containing the file with name l:filename. If the window
     " is not there, open a new window
     if bufname( l:filename ) == ""
-	let l:bufnum = -1
+        let l:bufnum = -1
     else
-	let l:bufnum = bufnr( bufname( l:filename ) )
+        let l:bufnum = bufnr( bufname( l:filename ) )
     endif
+
     let l:winnum = bufwinnr( l:bufnum )
-    let l:val_winnum = winnr()
     if l:bufnum == -1 || l:winnum == -1
-	" first find or create a suitable window
-        if exists("g:valgrind_use_horizontal_window") && g:valgrind_use_horizontal_window
-	    wincmd j
-	    let l:winnum = winnr()
-	    if l:winnum == l:val_winnum
-		execute 'leftabove new'
-		let l:winnum = winnr()
-	    endif
+        "first find or create a suitable window
+        if l:stay_this_window 
+            let l:this_win = winnr()
+            execute l:this_win.'wincmd w'
         else
-	    wincmd l
-	    let l:winnum = winnr()
-	    if l:winnum == l:val_winnum
-		execute 'rightbelow vertical new'
-		let l:winnum = winnr()
-	    endif
+            if exists("g:valgrind_use_horizontal_window") && g:valgrind_use_horizontal_window
+                " Move to the next window down
+                wincmd j
+                let l:winnum = winnr()
+                if l:winnum == s:val_winnum
+                    execute 'leftabove new'
+                    let l:winnum = winnr()
+                endif
+            else
+                wincmd l
+                let l:winnum = winnr()
+                if l:winnum == s:val_winnum
+                    execute 'rightbelow vertical new'
+                    let l:winnum = winnr()
+                endif
+            endif
         endif
 
-	" open the file in that window
-	if ( l:bufnum == -1 )
-	    silent! execute 'edit '.l:filename
-	else
-	    silent! execute 'edit #'.l:bufnum
-	endif
-	if v:errmsg != ""
-	    echoerr v:errmsg
-	    execute l:val_winnum.'wincmd w'
-	    return
-	endif
-        execute l:val_winnum.'wincmd w'
+        " open the file in that window
+        if ( l:bufnum == -1 )
+            silent! execute 'edit '.l:filename
+        else
+            silent! execute 'edit #'.l:bufnum
+        endif
+
+        if v:errmsg != ""
+            echoerr v:errmsg
+            execute s:val_winnum.'wincmd w'
+            return 1
+        endif
+
+            execute s:val_winnum.'wincmd w'
         if exists("g:valgrind_use_horizontal_window") && g:valgrind_use_horizontal_window
-	    execute 'resize '.g:valgrind_win_height
-	else
-	    execute 'vertical resize '.g:valgrind_win_width
-	endif
-        execute l:winnum.'wincmd w'
+            execute 'resize '.g:valgrind_win_height
+        else
+            execute 'vertical resize '.g:valgrind_win_width
+        endif
+            execute l:winnum.'wincmd w'
     else
         execute l:winnum.'wincmd w'
         if a:new_window
@@ -252,12 +292,33 @@ function s:Jump_To_Error( new_window, stay_valgrind_window )
     " Goto the line l:linenumber and open a fold, if there is one.
     execute l:linenumber
     if foldclosed('.') != -1
-	execute "foldopen"
+        execute "foldopen"
     endif
     normal zz
 
-    if ( a:stay_valgrind_window )
-        execute l:val_winnum.'wincmd w'
+    if ( l:stay_valgrind_window )
+        execute s:val_winnum.'wincmd w'
+    endif
+
+    return 1
+
+endfunction
+
+function s:Up()
+    let s:lineNo = s:lineNo + 1
+    let l:stackLine = getbufline(s:val_buffer,s:lineNo)
+    if s:OpenStackTraceLine(0, 1, l:stackLine[0]) == -1
+        "Don't increment the line if we didn't move the stack
+        let s:lineNo = s:lineNo - 1
+    endif
+endfunction
+
+function s:Down()
+    let s:lineNo = s:lineNo - 1
+    let l:stackLine = getbufline(s:val_buffer,s:lineNo)
+    if s:OpenStackTraceLine(0, 1, l:stackLine[0]) == -1
+        "Don't increment the line if we didn't move the stack
+        let s:lineNo = s:lineNo + 1
     endif
 endfunction
 
@@ -266,7 +327,7 @@ endfunction
 
 function s:Zoom_Window()
     if !exists("s:win_maximized")
-	let s:win_maximized = 0
+    let s:win_maximized = 0
     endif
     if s:win_maximized
         if exists("g:valgrind_use_horizontal_window") && g:valgrind_use_horizontal_window
@@ -292,27 +353,27 @@ function s:Show_Help( first_time )
     setl modifiable
 
     if !a:first_time
-	normal G$
-	if ( search( '^$', 'w' ) > 0 )
-	    normal d1G
-	endif
+    normal G$
+    if ( search( '^$', 'w' ) > 0 )
+        normal d1G
+    endif
     endif
 
     if exists("s:show_help") && s:show_help == 1
-	call append(0, '" <enter> : Jump to error')
-	call append(1, '" o : Jump to error in new window')
-	call append(2, '" <space> : Show error')
-	call append(3, '" x : Zoom-out/Zoom-in valgrind window')
-	call append(4, '" + : Open a fold')
-	call append(5, '" - : Close a fold')
-	call append(6, '" * : Open all folds')
-	call append(7, '" q : Close the valgrind window')
-	call append(8, '" ? : Remove help text')
-	call append(9, '')
+    call append(0, '" <enter> : Jump to error')
+    call append(1, '" o : Jump to error in new window')
+    call append(2, '" <space> : Show error')
+    call append(3, '" x : Zoom-out/Zoom-in valgrind window')
+    call append(4, '" + : Open a fold')
+    call append(5, '" - : Close a fold')
+    call append(6, '" * : Open all folds')
+    call append(7, '" q : Close the valgrind window')
+    call append(8, '" ? : Remove help text')
+    call append(9, '')
         let s:show_help = 0
     else
-	call append(0, '" Press ? to display help text')
-	call append(1, '')
+    call append(0, '" Press ? to display help text')
+    call append(1, '')
         let s:show_help = 1
     endif
 
