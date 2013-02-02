@@ -37,6 +37,9 @@
 "    Specifies the height of the window that shows the valgrind output. This
 "    variable is only used with vertical splits. Defaults to 10.
 "
+" g:dont_export_hotkeys
+"    Don't remap <C-k> and <C-j> to navigate the call stack
+"
 " Example:
 "
 " If you want valgrind to always do leak checking, put the following into your
@@ -114,7 +117,12 @@ function s:Valgrind( ... )
     execute l:run_valgrind
 
     " show the result with the non-valgrind output stripped
-    silent execute 'split '.l:tmpfile
+    if  exists("s:val_buffer") && s:val_buffer == bufname(winbufnr(s:val_winnum))
+        silent execute s:val_winnum.'wincmd w'
+        silent execute 'edit ' . l:tmpfile
+    else
+        silent execute 'split '.l:tmpfile
+    endif
     silent execute 'g!/^==\d*==/d'
     silent execute '%s/^==\d*== //e'
     silent execute '1'
@@ -167,8 +175,10 @@ function s:Valgrind( ... )
     nnoremap <buffer> <silent> q :close<CR>
 
     " Navigate the call statck
-    nnoremap <silent> <C-k> :call <SID>Up()<CR>
-    nnoremap <silent> <C-j> :call <SID>Down()<CR>
+    if !(exists("g:dont_export_hotkeys") && g:dont_export_hotkeys)
+        nnoremap <silent> <C-k> :call <SID>Up()<CR>
+        nnoremap <silent> <C-j> :call <SID>Down()<CR>
+    endif
 endfunction
 
 " }}}
@@ -288,6 +298,10 @@ function s:OpenStackTraceLine(new_window, no_new_window, stackLine )
             split
         endif
     endif
+
+    " Mark the error
+    let l:marker = {'filename': l:filename, 'lnum': l:linenumber, 'type': 'E'}
+    call setqflist([l:marker], 'a')
 
     " Goto the line l:linenumber and open a fold, if there is one.
     execute l:linenumber
