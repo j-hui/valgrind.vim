@@ -1,7 +1,7 @@
-This is a mirror of http://www.vim.org/scripts/script.php?script_id=607
+This is a fork of http://www.vim.org/scripts/script.php?script_id=607
 
-Valgrind (http://developer.kde.org/~sewardj/) is an open-source memory debugger for x86-GNU/Linux. This script allows you to start valgrind from vim and easily jump to error it reports.
+Valgrind (http://developer.kde.org/~sewardj/) is an open-source memory debugger for x86-GNU/Linux. This script allows you to start valgrind from vim and easily jump to errors it reports.
 
-The script output is not very beautiful yet, but I find it already useful.
+This version has been enhanced to provide keys to move up and down the current call stack, and to make it behave more sensibly when it is re-run (it will attempt to re-use the same window)
 
 See the comments in the beginning of the script for some documentation.
