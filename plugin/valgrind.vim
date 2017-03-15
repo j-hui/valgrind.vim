@@ -123,8 +123,8 @@ function! s:Valgrind( ... )
     else
         silent execute 'split '.l:tmpfile
     endif
-    silent execute 'g!/^==\d*==/d'
-    silent execute '%s/^==\d*== //e'
+    silent execute 'g!/^\(\d\+: \)\===\d*==/d'
+    silent execute '%s/^\(\d\+: \)\===\d*== //e'
     silent execute '1'
 
     " Keep the valgrind buffer for future use
@@ -212,10 +212,10 @@ function! s:Jump_To_Error(new_window, stay_valgrind_window )
 endfunction
 
 function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
-    " What does it mean to say "no new window?" 
+    " What does it mean to say "no new window?"
     let l:stay_this_window = a:no_new_window
     let l:stay_valgrind_window = 0
-    if l:stay_this_window && winnr() == s:val_winnum 
+    if l:stay_this_window && winnr() == s:val_winnum
         let l:stay_valgrind_window = 1
         let l:stay_this_window = 0
     endif
@@ -234,7 +234,7 @@ function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     " determine file and line to go to
     let l:curline = substitute( substitute( a:stackLine, '.*(', '', '' ), ').*', '', '' )
     let l:filename = s:Find_File( substitute( l:curline, ':\d*$', '', '' ) )
-    if l:filename == "" 
+    if l:filename == ""
         return 1
     endif
     let l:linenumber = substitute( l:curline, '.*:', '', '' )
@@ -250,7 +250,7 @@ function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     let l:winnum = bufwinnr( l:bufnum )
     if l:bufnum == -1 || l:winnum == -1
         "first find or create a suitable window
-        if l:stay_this_window 
+        if l:stay_this_window
             let l:this_win = winnr()
             execute l:this_win.'wincmd w'
         else
