@@ -40,6 +40,12 @@
 " g:dont_export_hotkeys
 "    Don't remap <C-k> and <C-j> to navigate the call stack
 "
+" g:valgrind_file_process_hook
+"    Sometimes vagrind outputs are post-processed by other tools like CTest
+"    that add leading characters like "42: ". Define this action to execute on
+"    the current buffer to restore valgrind output. For CTest, it would be:
+"       :let g:valgrind_file_process_hook = '%s/\v^\d\+: //'
+"
 " Example:
 "
 " If you want valgrind to always do leak checking, put the following into your
@@ -122,6 +128,9 @@ function! s:Valgrind( ... )
         silent execute 'edit ' . l:tmpfile
     else
         silent execute 'split '.l:tmpfile
+    endif
+    if exists('g:valgrind_file_process_hook')
+      silent execute g:valgrind_file_process_hook
     endif
     silent execute 'g!/^==\d*==/d'
     silent execute '%s/^==\d*== //e'
@@ -212,10 +221,10 @@ function! s:Jump_To_Error(new_window, stay_valgrind_window )
 endfunction
 
 function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
-    " What does it mean to say "no new window?" 
+    " What does it mean to say "no new window?"
     let l:stay_this_window = a:no_new_window
     let l:stay_valgrind_window = 0
-    if l:stay_this_window && winnr() == s:val_winnum 
+    if l:stay_this_window && winnr() == s:val_winnum
         let l:stay_valgrind_window = 1
         let l:stay_this_window = 0
     endif
@@ -234,7 +243,7 @@ function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     " determine file and line to go to
     let l:curline = substitute( substitute( a:stackLine, '.*(', '', '' ), ').*', '', '' )
     let l:filename = s:Find_File( substitute( l:curline, ':\d*$', '', '' ) )
-    if l:filename == "" 
+    if l:filename == ""
         return 1
     endif
     let l:linenumber = substitute( l:curline, '.*:', '', '' )
@@ -250,7 +259,7 @@ function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     let l:winnum = bufwinnr( l:bufnum )
     if l:bufnum == -1 || l:winnum == -1
         "first find or create a suitable window
-        if l:stay_this_window 
+        if l:stay_this_window
             let l:this_win = winnr()
             execute l:this_win.'wincmd w'
         else
