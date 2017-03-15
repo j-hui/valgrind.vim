@@ -88,7 +88,7 @@ endif
 "--------------------------------------------
 " Valgrind( filename ) {{{
 
-function s:Valgrind( ... )
+function! s:Valgrind( ... )
     let l:tmpfile=tempname()
 
     " construct the commandline and execute it
@@ -184,7 +184,7 @@ endfunction
 " }}}
 " Find_File( filename ) {{{
 
-function s:Find_File( filename )
+function! s:Find_File( filename )
     if filereadable( a:filename )
     return a:filename
     else
@@ -196,7 +196,7 @@ endfunction
 " }}}
 " Jump_To_Error( new_window, stay_valgrind_window ) {{{
 
-function s:Jump_To_Error(new_window, stay_valgrind_window )
+function! s:Jump_To_Error(new_window, stay_valgrind_window )
     " do not process empty lines
     let l:curline = getline('.')
     if l:curline == ''
@@ -211,7 +211,7 @@ function s:Jump_To_Error(new_window, stay_valgrind_window )
 
 endfunction
 
-function s:OpenStackTraceLine(new_window, no_new_window, stackLine ) 
+function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     " What does it mean to say "no new window?" 
     let l:stay_this_window = a:no_new_window
     let l:stay_valgrind_window = 0
@@ -318,7 +318,7 @@ function s:OpenStackTraceLine(new_window, no_new_window, stackLine )
 
 endfunction
 
-function s:Up()
+function! s:Up()
     let s:lineNo = s:lineNo + 1
     let l:stackLine = getbufline(s:val_buffer,s:lineNo)
     if s:OpenStackTraceLine(0, 1, l:stackLine[0]) == -1
@@ -327,7 +327,7 @@ function s:Up()
     endif
 endfunction
 
-function s:Down()
+function! s:Down()
     let s:lineNo = s:lineNo - 1
     let l:stackLine = getbufline(s:val_buffer,s:lineNo)
     if s:OpenStackTraceLine(0, 1, l:stackLine[0]) == -1
@@ -339,7 +339,7 @@ endfunction
 " }}}
 " Zoom_Window() {{{
 
-function s:Zoom_Window()
+function! s:Zoom_Window()
     if !exists("s:win_maximized")
     let s:win_maximized = 0
     endif
@@ -363,7 +363,7 @@ endfunction
 " }}}
 " Show_Help( first_time ) {{{
 
-function s:Show_Help( first_time )
+function! s:Show_Help( first_time )
     setl modifiable
 
     if !a:first_time
