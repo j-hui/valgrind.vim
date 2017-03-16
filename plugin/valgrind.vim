@@ -40,6 +40,12 @@
 " g:dont_export_hotkeys
 "    Don't remap <C-k> and <C-j> to navigate the call stack
 "
+" g:valgrind_file_process_hook
+"    Sometimes vagrind outputs are post-processed by other tools like CTest
+"    that add leading characters like "42: ". Define this action to execute on
+"    the current buffer to restore valgrind output. For CTest, it would be:
+"       :let g:valgrind_file_process_hook = '%s/\v^\d\+: //'
+"
 " Example:
 "
 " If you want valgrind to always do leak checking, put the following into your
@@ -123,8 +129,11 @@ function! s:Valgrind( ... )
     else
         silent execute 'split '.l:tmpfile
     endif
-    silent execute 'g!/^\(\d\+: \)\===\d*==/d'
-    silent execute '%s/^\(\d\+: \)\===\d*== //e'
+    if exists('g:valgrind_file_process_hook')
+      silent execute g:valgrind_file_process_hook
+    endif
+    silent execute 'g!/^==\d*==/d'
+    silent execute '%s/^==\d*== //e'
     silent execute '1'
 
     " Keep the valgrind buffer for future use
