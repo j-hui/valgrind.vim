@@ -1,6 +1,8 @@
 " Vim global plugin for valgrind
-" Maintainer: Rainer M. Schmid <rms@trolltech.com>
-" Version: $Id: valgrind.vim,v 1.2 2003/03/31 08:43:27 rms Exp $
+" Initial author: Rainer M. Schmid <rms@trolltech.com>
+" Maintainer: Luke Humphreys
+" Contribution: Luc Hermitte 2017, CMake support
+" Version: forked from v1.2
 
 
 " General:
