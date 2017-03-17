@@ -184,7 +184,7 @@ endfunction
 
 function! s:Find_File( filename )
     if filereadable( a:filename )
-    return a:filename
+        return a:filename
     else
     " ### implement me
     "echo globpath( &path, a:filename )
@@ -205,8 +205,6 @@ function! s:Jump_To_Error(new_window, stay_valgrind_window )
     let s:lineNo = line(".")
 
     call s:OpenStackTraceLine(a:new_window, a:stay_valgrind_window, l:curline)
-
-
 endfunction
 
 function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
@@ -306,7 +304,7 @@ function! s:OpenStackTraceLine(new_window, no_new_window, stackLine )
     if foldclosed('.') != -1
         execute "foldopen"
     endif
-    normal zz
+    normal! zz
 
     if ( l:stay_valgrind_window )
         execute s:val_winnum.'wincmd w'
@@ -339,7 +337,7 @@ endfunction
 
 function! s:Zoom_Window()
     if !exists("s:win_maximized")
-    let s:win_maximized = 0
+        let s:win_maximized = 0
     endif
     if s:win_maximized
         if exists("g:valgrind_use_horizontal_window") && g:valgrind_use_horizontal_window
@@ -365,31 +363,31 @@ function! s:Show_Help( first_time )
     setl modifiable
 
     if !a:first_time
-    normal G$
-    if ( search( '^$', 'w' ) > 0 )
-        normal d1G
-    endif
+        normal! G$
+        if ( search( '^$', 'w' ) > 0 )
+            normal! d1G
+        endif
     endif
 
     if exists("s:show_help") && s:show_help == 1
-    call append(0, '" <enter> : Jump to error')
-    call append(1, '" o : Jump to error in new window')
-    call append(2, '" <space> : Show error')
-    call append(3, '" x : Zoom-out/Zoom-in valgrind window')
-    call append(4, '" + : Open a fold')
-    call append(5, '" - : Close a fold')
-    call append(6, '" * : Open all folds')
-    call append(7, '" q : Close the valgrind window')
-    call append(8, '" ? : Remove help text')
-    call append(9, '')
+        call append(0, '" <enter> : Jump to error')
+        call append(1, '" o : Jump to error in new window')
+        call append(2, '" <space> : Show error')
+        call append(3, '" x : Zoom-out/Zoom-in valgrind window')
+        call append(4, '" + : Open a fold')
+        call append(5, '" - : Close a fold')
+        call append(6, '" * : Open all folds')
+        call append(7, '" q : Close the valgrind window')
+        call append(8, '" ? : Remove help text')
+        call append(9, '')
         let s:show_help = 0
     else
-    call append(0, '" Press ? to display help text')
-    call append(1, '')
+        call append(0, '" Press ? to display help text')
+        call append(1, '')
         let s:show_help = 1
     endif
 
-    normal 1G
+    normal! 1G
     foldopen
 
     setl nomodifiable
