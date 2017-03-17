@@ -100,28 +100,15 @@ function! s:Valgrind( ... )
     let l:tmpfile=tempname()
 
     " construct the commandline and execute it
-    let l:run_valgrind='!'
+    let l:run_valgrind = '!'
 
-    if exists("g:valgrind_command")
-        let l:run_valgrind=l:run_valgrind.g:valgrind_command
-    else
-        let l:run_valgrind=l:run_valgrind.'valgrind'
-    endif
-
-    if exists("g:valgrind_arguments")
-        let l:run_valgrind=l:run_valgrind.' '.g:valgrind_arguments
-    else
-        let l:run_valgrind=l:run_valgrind.' --num-callers=5000'
-    endif
+    let l:run_valgrind .= get(g:, 'valgrind_command', 'valgrind')
+    let l:run_valgrind .= ' '.get(g:, 'valgrind_arguments', '--num-callers=5000')
 
     "add any custom arguments
-    let l:i = 1
-    while l:i <= a:0
-        execute 'let l:run_valgrind=l:run_valgrind." ".a:'.l:i
-        let l:i = l:i + 1
-    endwhile
+    let l:run_valgrind .= join(a:000, ' ')
 
-    let l:run_valgrind=l:run_valgrind.' 2>&1| tee '.l:tmpfile
+    let l:run_valgrind .= ' 2>&1| tee '.l:tmpfile
     execute l:run_valgrind
 
     " show the result with the non-valgrind output stripped
