@@ -1,0 +1,94 @@
+*valgrind.txt*      Vim plugin for valgrind
+
+
+Last change: 2021-05-07
+Version: 1.2
+License: ??
+Initial author: Rainer M. Schmid <rms@trolltech.com>
+Contributers: LAHumphreys, LucHermitte, j-hui
+Repository: https://github.com/j-hui/valgrind.vim
+Last Change: 2021-05-07
+
+CONTENTS                                        *valgrind-contents*
+
+General                                         |valgrind-general|
+Options                                         |valgrind-options|
+Changelog                                       |valgrind-changelog|
+
+==============================================================================
+General                                         *valgrind-general*
+
+Valgrind (https://www.valgrind.org/) is an open-source memory debugger. This
+script allows you to start valgrind from vim and easily jump to errors it
+reports.
+
+This is a fork of http://www.vim.org/scripts/script.php?script_id=607, by
+Rainer M. Schmid. LAHumphreys added support for moving up and down the current
+call stack and making the plugin behave more sensibly when re-run (it will
+attempt to re-run in the same window). LucHermitte added support for CTest.
+
+If you are using |vim-plug|, you can install this plugin by adding the
+following to your .vimrc:
+>
+    Plug 'j-hui/valgrind.vim'
+<
+Source your .vimrc and run :PlugInstall.
+
+==============================================================================
+Options                                         *valgrind-options*
+
+You can configure the behaviour of this plugin with the following variables:
+
+*g:valgrind_command*
+    The command to start valgrind.
+
+    Default: "valgrind"
+
+*g:valgrind_arguments*
+
+    The arguments that should always be used when running valgrind.
+    For example, if you always want valgrind to perform leak-checking:
+    following:
+>
+    let g:valgrind_arguments='--leak-check=yes --num-callers=5000'
+<
+    Default: '--num-callers=5000'
+
+*g:valgrind_use_horizontal_window*
+
+    When non-zero, the script uses horizontal splits to show valgrind output.
+    Otherwise, the script uses vertical splits.
+
+    Default: 0
+
+*g:valgrind_win_width*
+
+    Specifies the width of the window that shows the valgrind output. This
+    variable is only used with vertical splits.
+
+    Default: 30
+
+*g:valgrind_win_height*
+    Specifies the height of the window that shows the valgrind output. This
+    variable is only used with vertical splits.
+
+    Default: 10
+
+*g:dont_export_hotkeys*
+
+    When non-zero, don't remap <C-k> and <C-j> to navigate the call stack.
+
+    Default: 0
+
+*g:valgrind_file_process_hook*
+
+    Sometimes valgrind outputs are post-processed by other tools like CTest
+    that add leading characters like "42: ". Use this option to define an ex
+    command to process the valgrind buffer and restore valgrind output. For
+    CTest, we can strip out the leading characters with:
+>
+    g:valgrind_file_process_hook = '%s/\v^\d\+: //'
+<
+    Default: '' (do nothing)
+
+vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker
