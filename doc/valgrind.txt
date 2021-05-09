@@ -143,7 +143,8 @@ q                       Close the valgrind buffer.
 
 Unlike |valgrind-buf-maps|, these mappings are available globally. No default
 key maps are defined, so you should specify for your own bindings in your
-.vimrc.
+.vimrc. Since these are |<Plug>| maps, make sure to use |nmap| rather than
+|nnoremap|.
 
                                                 *valgrind_<Plug>ValgrindStackUp*
 <Plug>ValgrindStackUp   Calls |valgrind#ValgrindStackUp()|, which moves up the
@@ -155,6 +156,19 @@ key maps are defined, so you should specify for your own bindings in your
                         the call stack most recently by |valgrind_<CR>| or
                         |valgrind_o|.
 
+If you only want these mappings to be defined after calling :Valgrind, you can
+register in response to the |ValgrindEnter| event:
+>
+    function ValgrindMaps()
+      nmap [v <Plug>ValgrindStackUp
+      nmap ]v <Plug>ValgrindStackDown
+    endfunction
+
+    augroup valgrind_hook
+      autocmd!
+      autocmd User ValgrindEnter call ValgrindMaps()
+    augroup END
+<
 ==============================================================================
 Functions                                       *valgrind-functions*
 
