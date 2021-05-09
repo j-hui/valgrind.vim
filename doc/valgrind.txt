@@ -12,27 +12,63 @@ Last Change: 2021-05-07
 CONTENTS                                        *valgrind-contents*
 
 General                                         |valgrind-general|
+Commands                                        |valgrind-commands|
 Options                                         |valgrind-options|
-Changelog                                       |valgrind-changelog|
+Maps                                            |valgrind-maps|
+Functions                                       |valgrind-functions|
 
 ==============================================================================
 General                                         *valgrind-general*
 
 Valgrind (https://www.valgrind.org/) is an open-source memory debugger. This
-script allows you to start valgrind from vim and easily jump to errors it
-reports.
+script allows users to start valgrind from Vim using the |:Valgrind| command,
+and easily jump to errors it reports.
 
-This is a fork of http://www.vim.org/scripts/script.php?script_id=607, by
-Rainer M. Schmid. LAHumphreys added support for moving up and down the current
-call stack and making the plugin behave more sensibly when re-run (it will
-attempt to re-run in the same window). LucHermitte added support for CTest.
+Valgrind is usually invoked from the command line, for instance:
+>
+        $ valgrind ./my-program arg1 arg2
+<
+This plugin allows users to do the same from Vim with the following:
+>
+        :Valgrind ./my-program arg1 arg2
+<
+
+This places Valgrind's output in a valgrind buffer, with commands to navigate
+the call stack for any errors reported, and basic syntax highlighting courtesy
+of Vim (https://github.com/vim/vim/blob/master/runtime/syntax/valgrind.vim).
+
+Installation~
 
 If you are using |vim-plug|, you can install this plugin by adding the
 following to your .vimrc:
 >
     Plug 'j-hui/valgrind.vim'
 <
-Source your .vimrc and run :PlugInstall.
+Source your .vimrc and run :PlugInstall from Vim.
+
+Acknowledgements~
+
+This is a fork of http://www.vim.org/scripts/script.php?script_id=607, by
+Rainer M. Schmid, later forked by LAHumphreys, then LucHermitte. LAHumphreys
+added support for moving up and down the current call stack and making the
+plugin behave more sensibly when re-run (it will attempt to re-run in the same
+window). LucHermitte added support for CTest.
+
+This particular fork builds off the aforementioned forks, and tries to
+simplify the jumping and splitting behavior, and makes the keybindings and
+valgrind buffer hook more configurable.
+
+==============================================================================
+Commands                                        *valgrind-commands*
+
+*:Valgrind*
+
+Calls |valgrind#Valgrind(...)|. If given arguments, call |g:valgrind_command|,
+and open the results in the valgrind buffer. If no valgrind buffer existed
+previously, a new one will be created.
+
+If no arguments are given, this will reopen the pre-existing valgrind buffer,
+if any.
 
 ==============================================================================
 Options                                         *valgrind-options*
@@ -40,6 +76,7 @@ Options                                         *valgrind-options*
 You can configure the behaviour of this plugin with the following variables:
 
 *g:valgrind_command*
+
     The command to start valgrind.
 
     Default: "valgrind"
@@ -50,45 +87,114 @@ You can configure the behaviour of this plugin with the following variables:
     For example, if you always want valgrind to perform leak-checking:
     following:
 >
-    let g:valgrind_arguments='--leak-check=yes --num-callers=5000'
+        let g:valgrind_arguments='--leak-check=yes --num-callers=5000'
+<
+    Note that the :Valgrind command supports ad hoc arguments too, e.g.,
+>
+        :Valgrind --leak-check=full ./command
 <
     Default: '--num-callers=5000'
 
-*g:valgrind_use_horizontal_window*
-
-    When non-zero, the script uses horizontal splits to show valgrind output.
-    Otherwise, the script uses vertical splits.
-
-    Default: 0
-
-*g:valgrind_win_width*
-
-    Specifies the width of the window that shows the valgrind output. This
-    variable is only used with vertical splits.
-
-    Default: 30
-
 *g:valgrind_win_height*
-    Specifies the height of the window that shows the valgrind output. This
-    variable is only used with vertical splits.
+
+    Specifies the height of the window that shows the valgrind output.
 
     Default: 10
 
-*g:dont_export_hotkeys*
+*g:valgrind_strip_program_output*
 
-    When non-zero, don't remap <C-k> and <C-j> to navigate the call stack.
+    If non-zero, strip out any non-valgrind output. Set to 0 if, for
+    instance, the program prints debug information that is useful to have
+    interleaved with the valgrind output.
 
-    Default: 0
+    Default: 1
 
-*g:valgrind_file_process_hook*
+*g:valgrind_enable_folding*
 
-    Sometimes valgrind outputs are post-processed by other tools like CTest
-    that add leading characters like "42: ". Use this option to define an ex
-    command to process the valgrind buffer and restore valgrind output. For
-    CTest, we can strip out the leading characters with:
+    Fold valgrind output. Note that valgrind output will only appear folded
+    when |foldlevel| is 0.
+
+    Default: 1
+
+==============================================================================
+Maps                                            *valgrind-maps*
+
+                                                *valgrind-buf-maps*
+Valgrind buffer maps~
+
+These mappings will be defined for the valgrind buffer only.
+
+                                                *valgrind_<CR>*
+<CR>                    When the cursor is over a stack trace, show file and
+                        line in the previous window. Focus stays in the
+                        valgrind buffer.
+
+                                                *valgrind_o*
+o                       Like |valgrind_<CR>|, but follow focus to the buffer.
+
+                                                *valgrind_q*
+q                       Close the valgrind buffer.
+
+                                                *valgrind_?*
+?                       Show this help document.
+
+                                                *valgrind-plug-maps*
+<Plug> maps~
+
+Unlike |valgrind-buf-maps|, these mappings are available globally. No default
+key maps are defined, so you should specify for your own bindings in your
+.vimrc.
+
+                                                *valgrind_<Plug>ValgrindStackUp*
+<Plug>ValgrindStackUp   Calls |valgrind#ValgrindStackUp()|, which moves up the
+                        call stack most recently opened by |valgrind_<CR>| or
+                        |valgrind_o|.
+
+                                                *valgrind_<Plug>ValgrindStackDown*
+<Plug>ValgrindStackDown Calls |valgrind#ValgrindStackDown()|, which moves down
+                        the call stack most recently by |valgrind_<CR>| or
+                        |valgrind_o|.
+
+==============================================================================
+Functions                                       *valgrind-functions*
+
+*valgrind#Valgrind(...)*
+
+Called by |:Valgrind|. If given arguments, call |valgrind-command|, and open
+the results in the valgrind buffer. If no valgrind buffer existed previously,
+a new one will be created.
+
+If no arguments are given, this will reopen the pre-existing valgrind buffer,
+if any.
+
+*valgrind-ValgrindStackUp()*
+
+Moves up the call stack most recently opened by |valgrind_<CR>| or
+|valgrind_o| in the valgrind buffer.
+
+*valgrind-ValgrindStackDown()*
+
+Moves down the call stack most recently opened by |valgrind_<CR>| or
+|valgrind_o| in the valgrind buffer.
+
+==============================================================================
+Events                                          *valgrind-events*
+
+                                                *ValgrindEnter*
+                                                *valgrind-CTest*
+When a valgrind buffer is created and populated with valgrind output, the
+ValgrindEnter event will be emitted. This can be used to modify the buffer,
+which is useful if another tool like CTest wraps the valgrind output with
+leading characters such as "42: ". To restore the original valgrind output:
 >
-    g:valgrind_file_process_hook = '%s/\v^\d\+: //'
+        function ValgrindHook()
+          %substitute/\v^\d\+: //
+        endfunction
+
+        augroup valgrind_hook
+          autocmd!
+          autocmd User ValgrindEnter call ValgrindHook()
+        augroup END
 <
-    Default: '' (do nothing)
 
 vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker

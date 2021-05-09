@@ -4,7 +4,6 @@ endif
 let loaded_valgrind = 1
 
 if !exists(":Valgrind")
-    command -nargs=1 Valgrind call valgrind#Valgrind(<f-args>)
-    command  Memtest call valgrind#Valgrind()
+    command -nargs=* Valgrind call valgrind#Valgrind(<f-args>)
 endif
 " vim600:foldmethod=marker
