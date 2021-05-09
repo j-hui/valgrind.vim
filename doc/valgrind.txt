@@ -1,4 +1,4 @@
-*valgrind.txt*      Vim plugin for valgrind
+*valgrind.vim*      Vim plugin for Valgrind
 
 
 Last change: 2021-05-07
