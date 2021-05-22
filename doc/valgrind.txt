@@ -92,7 +92,7 @@ These are all implemented by the |valgrind#Cmd()| function, which you can use
 to define your own commands. For instance, to define a `:Vg` command that
 behaves the same as |:Valgrind|, place the following in your .vimrc:
 >
-    command -bang -nargs=* Vg call valgrind#Cmd(<bang>0, <f-args>)
+    command -bang -nargs=* -complete=shellcmd Vg call valgrind#Cmd(<bang>0, <f-args>)
 <
 ==============================================================================
 Options                                         *valgrind-options*
