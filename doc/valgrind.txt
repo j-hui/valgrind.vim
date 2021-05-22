@@ -61,15 +61,39 @@ valgrind buffer hook more configurable.
 ==============================================================================
 Commands                                        *valgrind-commands*
 
-*:Valgrind*
+There are several variants of the |:Valgrind| command supported by this
+plugin:
 
-Calls |valgrind#Valgrind(...)|. If given arguments, call |g:valgrind_command|,
-and open the results in the valgrind buffer. If no valgrind buffer existed
-previously, a new one will be created.
+                                                *:Valgrind-args*
+:Valgrind {args}        Calls `valgrind {args}` (or whatever is specified by
+                        |g:valgrind_command|) and opens the results in the
+                        valgrind buffer. If no valgrind buffer existed
+                        previously, a new one will be created. {args} is saved
+                        for the next invocation of |:Valgrind!|.
 
-If no arguments are given, this will reopen the pre-existing valgrind buffer,
-if any.
+                                                *:Valgrind*
+:Valgrind               Opens a pre-existing valgrind buffer, if any. This is
+                        useful for revisiting a previous invocation of
+                        valgrind without actually re-running the command.
+                        Throws an error if no previous valgrind buffer exists.
 
+
+                                                *:Valgrind!*
+:Valgrind!              Calls `valgrind` (or whatever is specified by
+                        |g:valgrind_command|), using the {args} from the last
+                        invocation of |:Valgrind-args|, and opens the results
+                        in the valgrind buffer.
+
+                                                *:Valgrind!-args*
+:Valgrind! {args}       Calls `valgrind {args}` like |:Valgrind-args|, but
+                        does not save {args}.
+
+These are all implemented by the |valgrind#Cmd()| function, which you can use
+to define your own commands. For instance, to define a `:Vg` command that
+behaves the same as |:Valgrind|, place the following in your .vimrc:
+>
+    command -bang -nargs=* Vg call valgrind#Cmd(<bang>0, <f-args>)
+<
 ==============================================================================
 Options                                         *valgrind-options*
 
@@ -79,7 +103,7 @@ You can configure the behaviour of this plugin with the following variables:
 
     The command to start valgrind.
 
-    Default: "valgrind"
+    Default: 'valgrind'
 
 *g:valgrind_arguments*
 
@@ -89,7 +113,7 @@ You can configure the behaviour of this plugin with the following variables:
 >
         let g:valgrind_arguments='--leak-check=yes --num-callers=5000'
 <
-    Note that the :Valgrind command supports ad hoc arguments too, e.g.,
+    Note that the |:Valgrind| command supports ad hoc arguments too, e.g.,
 >
         :Valgrind --leak-check=full ./command
 <
@@ -147,12 +171,12 @@ key maps are defined, so you should specify for your own bindings in your
 |nnoremap|.
 
                                                 *valgrind_<Plug>ValgrindStackUp*
-<Plug>ValgrindStackUp   Calls |valgrind#ValgrindStackUp()|, which moves up the
+<Plug>ValgrindStackUp   Calls |valgrind#StackUp()|, which moves up the
                         call stack most recently opened by |valgrind_<CR>| or
                         |valgrind_o|.
 
                                                 *valgrind_<Plug>ValgrindStackDown*
-<Plug>ValgrindStackDown Calls |valgrind#ValgrindStackDown()|, which moves down
+<Plug>ValgrindStackDown Calls |valgrind#StackDown()|, which moves down
                         the call stack most recently by |valgrind_<CR>| or
                         |valgrind_o|.
 
@@ -172,21 +196,16 @@ register in response to the |ValgrindEnter| event:
 ==============================================================================
 Functions                                       *valgrind-functions*
 
-*valgrind#Valgrind(...)*
+*valgrind#Cmd()*
 
-Called by |:Valgrind|. If given arguments, call |valgrind-command|, and open
-the results in the valgrind buffer. If no valgrind buffer existed previously,
-a new one will be created.
+Called by |:Valgrind|. See |valgrind-commands| for details.
 
-If no arguments are given, this will reopen the pre-existing valgrind buffer,
-if any.
-
-*valgrind-ValgrindStackUp()*
+*valgrind#StackUp()*
 
 Moves up the call stack most recently opened by |valgrind_<CR>| or
 |valgrind_o| in the valgrind buffer.
 
-*valgrind-ValgrindStackDown()*
+*valgrind#StackDown()*
 
 Moves down the call stack most recently opened by |valgrind_<CR>| or
 |valgrind_o| in the valgrind buffer.
@@ -210,5 +229,4 @@ leading characters such as "42: ". To restore the original valgrind output:
           autocmd User ValgrindEnter call ValgrindHook()
         augroup END
 <
-
 vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker

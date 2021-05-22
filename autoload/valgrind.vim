@@ -34,31 +34,56 @@ endif
 " Valgrind buffer.
 let s:stack_line_no = -1
 let s:valgrind_buffer = ''
+let s:valgrind_saved_args = []
 
 "--------------------------------------------
 " Functions
 "--------------------------------------------
 
-function! valgrind#Valgrind(...)
-    if len(a:000) == 0
-        if s:valgrind_buffer != '' && bufwinnr(s:valgrind_buffer) != -1
-            silent execute bufwinnr(s:valgrind_buffer) . 'wincmd w'
-        elseif s:valgrind_buffer != ''
-            silent execute 'split ' . s:valgrind_buffer
-            silent execute 'resize ' . g:valgrind_win_height
-        else
-            echoerr 'No existing valgrind buffer. Please run :Valgrind with arguments first.'
-        endif
-        return
-    endif
+" Endpoint for :Valgrind[!] [args..]
+function! valgrind#Cmd(bang, ...)
+  let l:bang = a:bang
+  let l:args = a:000
 
+  " User typed :Valgrind ! [args...] ; treat it as :Valgrind! [args...]
+  if !a:bang && len(a:000) > 0 && a:000[0] ==# '!'
+    let l:bang = 1
+    let l:args = a:000[1:]
+  endif
+
+  if len(l:args) == 0
+    if l:bang
+      call valgrind#Run(s:valgrind_saved_args)
+    else
+      call valgrind#OpenBuffer()
+    endif
+  else
+    if !l:bang
+      let s:valgrind_saved_args = copy(l:args)
+    endif
+    call valgrind#Run(l:args)
+  endif
+endfunction
+
+function! valgrind#OpenBuffer()
+  if s:valgrind_buffer != '' && bufwinnr(s:valgrind_buffer) != -1
+      silent execute bufwinnr(s:valgrind_buffer) . 'wincmd w'
+  elseif s:valgrind_buffer != ''
+      silent execute 'split ' . s:valgrind_buffer
+      silent execute 'resize ' . g:valgrind_win_height
+  else
+      echoerr 'No existing valgrind buffer. Please run :Valgrind with arguments first.'
+  endif
+endfunction
+
+function! valgrind#Run(args)
     let l:tmpfile = tempname()
 
     " Construct the commandline
     let l:run_valgrind = '!' . g:valgrind_command . ' ' . g:valgrind_arguments
 
     " Add any custom arguments
-    let l:run_valgrind .= ' ' . join(a:000, ' ')
+    let l:run_valgrind .= ' ' . join(a:args, ' ')
     let l:run_valgrind .= ' 2>&1| tee ' . l:tmpfile
 
     execute l:run_valgrind
@@ -107,8 +132,8 @@ function! valgrind#Valgrind(...)
     nnoremap <buffer> <silent> ?              :help valgrind-buf-maps<CR>
 
     " Global mappings
-    nnoremap <silent> <Plug>ValgrindStackUp   :call valgrind#ValgrindUp()<CR>
-    nnoremap <silent> <Plug>ValgrindStackDown :call valgrind#ValgrindDown()<CR>
+    nnoremap <silent> <Plug>ValgrindStackUp   :call valgrind#StackUp()<CR>
+    nnoremap <silent> <Plug>ValgrindStackDown :call valgrind#StackDown()<CR>
 endfunction
 
 function! s:Jump_To_Error(follow_focus)
@@ -129,11 +154,11 @@ function! s:Jump_To_Error(follow_focus)
     call s:OpenStackTraceLine(a:follow_focus, l:curline)
 endfunction
 
-function! valgrind#ValgrindUp()
+function! valgrind#StackUp()
   call s:StackMove(1)
 endfunction
 
-function! valgrind#ValgrindDown()
+function! valgrind#StackDown()
   call s:StackMove(0)
 endfunction
 
@@ -166,6 +191,8 @@ function! s:Find_File(filename)
     else
         " ### FIXME
         "echo globpath( &path, a:filename )
+        echoerr 'Unable to find file'
+        return ''
     endif
 endfunction
 
@@ -194,8 +221,11 @@ function! s:OpenStackTraceLine(follow_focus, stackline)
         endif
     endif
 
-    silent! execute 'edit ' . l:filename
-    if v:errmsg != ""
+    echom l:filename
+
+    let v:errmsg = ''
+    silent execute 'edit ' . l:filename
+    if v:errmsg != ''
         echoerr v:errmsg
         if l:created_new_window
             close
