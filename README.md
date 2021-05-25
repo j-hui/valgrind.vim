@@ -26,7 +26,7 @@ If you are using [vim-plug](https://github.com/junegunn/vim-plug), you can
 install this plugin by adding the following to your .vimrc:
 
 ```
-Plug 'j-hui/valgrind.vim'
+Plug 'j-hui/valgrind.vim', { 'branch': 'main' }
 ```
 
 Source your .vimrc and run `:PlugInstall` from Vim.
