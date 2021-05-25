@@ -111,13 +111,13 @@ You can configure the behaviour of this plugin with the following variables:
     For example, if you always want valgrind to perform leak-checking:
     following:
 >
-        let g:valgrind_arguments='--leak-check=yes --num-callers=5000'
+        let g:valgrind_arguments='--leak-check=yes --num-callers=64'
 <
     Note that the |:Valgrind| command supports ad hoc arguments too, e.g.,
 >
         :Valgrind --leak-check=full ./command
 <
-    Default: '--num-callers=5000'
+    Default: ''
 
 *g:valgrind_win_height*
 

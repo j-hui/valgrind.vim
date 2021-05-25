@@ -11,7 +11,7 @@ if !exists('g:valgrind_command')
 endif
 
 if !exists('g:valgrind_arguments')
-  let g:valgrind_arguments = '--num-callers=5000'
+  let g:valgrind_arguments = ''
 endif
 
 if !exists('g:valgrind_win_height')
