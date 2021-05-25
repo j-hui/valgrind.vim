@@ -207,7 +207,7 @@ function! s:OpenStackTraceLine(follow_focus, stackline)
 
     let l:created_new_window = 0
     let l:was_in_valgrind = 0
-    if bufname() == s:valgrind_buffer
+    if bufname('') == s:valgrind_buffer
         " Currently in valgrind buffer; jump to previous window, which we will
         " use to show the stack trace line.
         let l:was_in_valgrind = 1
